@@ -2,7 +2,7 @@
 
 Fine-tuned DistilBERT classifier for routing customer support messages to intent categories, with a reproducible training pipeline and a FastAPI inference service.
 
-The project follows the PRD in `project-2-intent-classifier.md`: train on the Bitext customer support dataset, save/publish the model, and serve predictions through REST endpoints.
+The project trains on the Bitext customer support dataset, saves/publishes the model, and serves predictions through REST endpoints.
 
 ## Setup
 
