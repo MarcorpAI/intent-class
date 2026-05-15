@@ -8,7 +8,6 @@ from transformers import PreTrainedTokenizerBase
 
 from training.config import TrainingConfig
 
-
 TEXT_COLUMN_CANDIDATES = ("instruction", "text", "message", "utterance", "customer_message")
 LABEL_COLUMN_CANDIDATES = ("intent", "label", "category")
 
@@ -86,7 +85,9 @@ def tokenize_splits(
     config: TrainingConfig,
 ) -> DatasetDict:
     keep_columns = {"text", "labels"}
-    remove_columns = [column for column in splits["train"].column_names if column not in keep_columns]
+    remove_columns = [
+        column for column in splits["train"].column_names if column not in keep_columns
+    ]
 
     def tokenize_batch(batch: Mapping[str, list[Any]]) -> dict[str, Any]:
         return tokenizer(

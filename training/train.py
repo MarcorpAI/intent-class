@@ -17,14 +17,29 @@ from transformers import (
 from training.config import DEFAULT_CONFIG, TrainingConfig
 from training.data import label_mappings, prepare_splits, tokenize_splits
 from training.metrics import classification_report_dict, compute_basic_metrics
+from training.trainer_compat import trainer_tokenizer_kwargs
 
 
 def parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description="Fine-tune DistilBERT for support intent detection.")
+    parser = argparse.ArgumentParser(
+        description="Fine-tune DistilBERT for support intent detection."
+    )
     parser.add_argument("--max-samples", type=int, default=None, help="Limit rows for smoke tests.")
-    parser.add_argument("--model-id", default=os.getenv("HF_MODEL_ID"), help="Optional HF Hub repo id.")
-    parser.add_argument("--push-to-hub", action="store_true", help="Push trained artifacts to HF Hub.")
-    parser.add_argument("--no-push", action="store_true", help="Disable Hub push even if model id is set.")
+    parser.add_argument(
+        "--model-id",
+        default=os.getenv("HF_MODEL_ID"),
+        help="Optional HF Hub repo id.",
+    )
+    parser.add_argument(
+        "--push-to-hub",
+        action="store_true",
+        help="Push trained artifacts to HF Hub.",
+    )
+    parser.add_argument(
+        "--no-push",
+        action="store_true",
+        help="Disable Hub push even if model id is set.",
+    )
     parser.add_argument("--epochs", type=float, default=DEFAULT_CONFIG.num_train_epochs)
     parser.add_argument("--train-batch-size", type=int, default=DEFAULT_CONFIG.train_batch_size)
     parser.add_argument("--eval-batch-size", type=int, default=DEFAULT_CONFIG.eval_batch_size)
@@ -48,7 +63,9 @@ def write_json(path: Path, payload: object) -> None:
     path.write_text(json.dumps(payload, indent=2, sort_keys=True), encoding="utf-8")
 
 
-def training_arguments_kwargs(config: TrainingConfig, args: argparse.Namespace) -> dict[str, object]:
+def training_arguments_kwargs(
+    config: TrainingConfig, args: argparse.Namespace
+) -> dict[str, object]:
     kwargs: dict[str, object] = {
         "output_dir": str(config.output_dir),
         "learning_rate": config.learning_rate,
@@ -102,8 +119,8 @@ def train() -> dict[str, float]:
         args=training_args,
         train_dataset=tokenized["train"],
         eval_dataset=tokenized["validation"],
-        tokenizer=tokenizer,
         compute_metrics=compute_basic_metrics,
+        **trainer_tokenizer_kwargs(tokenizer),
     )
 
     trainer.train()

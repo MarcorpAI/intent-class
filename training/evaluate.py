@@ -10,6 +10,7 @@ from transformers import AutoModelForSequenceClassification, AutoTokenizer, Trai
 from training.config import DEFAULT_CONFIG
 from training.data import label_mappings, prepare_splits, tokenize_splits
 from training.metrics import classification_report_dict, compute_basic_metrics
+from training.trainer_compat import trainer_tokenizer_kwargs
 
 
 def parse_args() -> argparse.Namespace:
@@ -32,7 +33,11 @@ def main() -> None:
     tokenized = tokenize_splits(splits, tokenizer, config)
     model = AutoModelForSequenceClassification.from_pretrained(model_path)
 
-    trainer = Trainer(model=model, tokenizer=tokenizer, compute_metrics=compute_basic_metrics)
+    trainer = Trainer(
+        model=model,
+        compute_metrics=compute_basic_metrics,
+        **trainer_tokenizer_kwargs(tokenizer),
+    )
     output = trainer.predict(tokenized["test"])
     predictions = np.argmax(output.predictions, axis=-1)
     label_names = [id2label[index] for index in range(len(id2label))]
@@ -60,4 +65,3 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-
