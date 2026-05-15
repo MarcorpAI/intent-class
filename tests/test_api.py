@@ -1,6 +1,7 @@
 from __future__ import annotations
 
-from fastapi.testclient import TestClient
+import pytest
+from httpx import ASGITransport, AsyncClient
 
 from app.main import app
 from app.predictor import IntentPrediction
@@ -30,12 +31,23 @@ class FakePredictor:
         ]
 
 
-def test_health_reports_loaded_model() -> None:
-    with TestClient(app) as client:
-        app.state.predictor = FakePredictor()
-        app.state.model_error = None
+@pytest.fixture
+def anyio_backend() -> str:
+    return "asyncio"
 
-        response = client.get("/health")
+
+@pytest.fixture
+def fake_predictor() -> FakePredictor:
+    return FakePredictor()
+
+
+@pytest.mark.anyio
+async def test_health_reports_loaded_model(fake_predictor: FakePredictor) -> None:
+    app.state.predictor = fake_predictor
+    app.state.model_error = None
+    transport = ASGITransport(app=app)
+    async with AsyncClient(transport=transport, base_url="http://test") as client:
+        response = await client.get("/health")
 
     assert response.status_code == 200
     assert response.json() == {
@@ -47,12 +59,13 @@ def test_health_reports_loaded_model() -> None:
     }
 
 
-def test_predict_returns_intent_scores() -> None:
-    with TestClient(app) as client:
-        app.state.predictor = FakePredictor()
-        app.state.model_error = None
-
-        response = client.post("/predict", json={"text": "Cancel my order"})
+@pytest.mark.anyio
+async def test_predict_returns_intent_scores(fake_predictor: FakePredictor) -> None:
+    app.state.predictor = fake_predictor
+    app.state.model_error = None
+    transport = ASGITransport(app=app)
+    async with AsyncClient(transport=transport, base_url="http://test") as client:
+        response = await client.post("/predict", json={"text": "Cancel my order"})
 
     assert response.status_code == 200
     assert response.json() == {
@@ -62,12 +75,13 @@ def test_predict_returns_intent_scores() -> None:
     }
 
 
-def test_predict_batch_preserves_input_order() -> None:
-    with TestClient(app) as client:
-        app.state.predictor = FakePredictor()
-        app.state.model_error = None
-
-        response = client.post(
+@pytest.mark.anyio
+async def test_predict_batch_preserves_input_order(fake_predictor: FakePredictor) -> None:
+    app.state.predictor = fake_predictor
+    app.state.model_error = None
+    transport = ASGITransport(app=app)
+    async with AsyncClient(transport=transport, base_url="http://test") as client:
+        response = await client.post(
             "/predict/batch",
             json={"texts": ["Where is my order?", "Cancel this order"]},
         )
@@ -79,23 +93,24 @@ def test_predict_batch_preserves_input_order() -> None:
     ]
 
 
-def test_predict_rejects_empty_text() -> None:
-    with TestClient(app) as client:
-        app.state.predictor = FakePredictor()
-        app.state.model_error = None
-
-        response = client.post("/predict", json={"text": ""})
+@pytest.mark.anyio
+async def test_predict_rejects_empty_text(fake_predictor: FakePredictor) -> None:
+    app.state.predictor = fake_predictor
+    app.state.model_error = None
+    transport = ASGITransport(app=app)
+    async with AsyncClient(transport=transport, base_url="http://test") as client:
+        response = await client.post("/predict", json={"text": ""})
 
     assert response.status_code == 422
 
 
-def test_predict_returns_503_when_model_is_not_loaded() -> None:
-    with TestClient(app) as client:
-        app.state.predictor = None
-        app.state.model_error = "model missing"
-
-        response = client.post("/predict", json={"text": "Cancel my order"})
+@pytest.mark.anyio
+async def test_predict_returns_503_when_model_is_not_loaded() -> None:
+    app.state.predictor = None
+    app.state.model_error = "model missing"
+    transport = ASGITransport(app=app)
+    async with AsyncClient(transport=transport, base_url="http://test") as client:
+        response = await client.post("/predict", json={"text": "Cancel my order"})
 
     assert response.status_code == 503
     assert response.json()["detail"] == "model missing"
-

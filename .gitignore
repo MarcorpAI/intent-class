@@ -1,5 +1,6 @@
 .repo/
 .venv/
+.uv-cache/
 __pycache__/
 *.py[cod]
 .pytest_cache/
@@ -13,4 +14,3 @@ reports/
 runs/
 wandb/
 *.egg-info/
-

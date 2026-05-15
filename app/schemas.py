@@ -4,7 +4,6 @@ from typing import Annotated
 
 from pydantic import BaseModel, ConfigDict, Field
 
-
 NonEmptyText = Annotated[str, Field(min_length=1)]
 
 

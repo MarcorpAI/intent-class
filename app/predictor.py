@@ -4,10 +4,6 @@ import os
 from dataclasses import dataclass
 from pathlib import Path
 
-import torch
-from transformers import AutoModelForSequenceClassification, AutoTokenizer
-
-
 DEFAULT_MODEL_ID = "artifacts/intent-model"
 
 
@@ -21,6 +17,10 @@ class IntentPrediction:
 
 class IntentPredictor:
     def __init__(self, model_id: str | None = None) -> None:
+        import torch
+        from transformers import AutoModelForSequenceClassification, AutoTokenizer
+
+        self.torch = torch
         self.model_id = model_id or os.getenv("INTENT_MODEL_ID", DEFAULT_MODEL_ID)
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.tokenizer = AutoTokenizer.from_pretrained(self.model_id)
@@ -36,7 +36,7 @@ class IntentPredictor:
         return [id2label[index] for index in sorted(id2label)]
 
     @classmethod
-    def from_env(cls) -> "IntentPredictor":
+    def from_env(cls) -> IntentPredictor:
         model_id = os.getenv("INTENT_MODEL_ID", DEFAULT_MODEL_ID)
         if model_id == DEFAULT_MODEL_ID and not Path(model_id).exists():
             raise FileNotFoundError(
@@ -57,13 +57,13 @@ class IntentPredictor:
             return_tensors="pt",
         )
         encoded = {key: value.to(self.device) for key, value in encoded.items()}
-        with torch.inference_mode():
+        with self.torch.inference_mode():
             logits = self.model(**encoded).logits
-            probabilities = torch.softmax(logits, dim=-1).detach().cpu()
+            probabilities = self.torch.softmax(logits, dim=-1).detach().cpu()
 
         predictions: list[IntentPrediction] = []
         for text, scores in zip(texts, probabilities, strict=True):
-            top_index = int(torch.argmax(scores).item())
+            top_index = int(self.torch.argmax(scores).item())
             labels = self.labels or [str(index) for index in range(scores.shape[0])]
             all_scores = {
                 label: round(float(score), 6)

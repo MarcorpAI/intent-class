@@ -7,7 +7,15 @@ The project follows the PRD in `project-2-intent-classifier.md`: train on the Bi
 ## Setup
 
 ```bash
-uv sync --all-groups
+python3.11 -m venv .venv
+.venv/bin/pip install uv
+UV_CACHE_DIR=.uv-cache .venv/bin/uv sync --group dev
+```
+
+Install the ML stack only when training or serving a real model:
+
+```bash
+UV_CACHE_DIR=.uv-cache .venv/bin/uv sync --group train --group notebook --group serve-ml
 ```
 
 This workspace uses a separate git directory because the environment mounts `.git` as read-only:
@@ -19,10 +27,10 @@ git --git-dir=.repo/git --work-tree=. status
 ## Development Commands
 
 ```bash
-uv run pytest
-uv run python -m training.train --max-samples 64 --no-push
-uv run python -m training.evaluate --model-path artifacts/intent-model
-uv run uvicorn app.main:app --reload
+UV_CACHE_DIR=.uv-cache .venv/bin/uv run pytest
+UV_CACHE_DIR=.uv-cache .venv/bin/uv run python -m training.train --max-samples 64 --no-push
+UV_CACHE_DIR=.uv-cache .venv/bin/uv run python -m training.evaluate --model-path artifacts/intent-model
+UV_CACHE_DIR=.uv-cache .venv/bin/uv run uvicorn app.main:app --reload
 ```
 
 ## Training
@@ -32,13 +40,13 @@ The primary full training path is the Colab notebook at `notebooks/training_walk
 Local smoke test:
 
 ```bash
-uv run python -m training.train --max-samples 64 --epochs 1 --train-batch-size 8 --eval-batch-size 16 --no-push
+UV_CACHE_DIR=.uv-cache .venv/bin/uv run python -m training.train --max-samples 64 --epochs 1 --train-batch-size 8 --eval-batch-size 16 --no-push
 ```
 
 Full training:
 
 ```bash
-uv run python -m training.train
+UV_CACHE_DIR=.uv-cache .venv/bin/uv run python -m training.train
 ```
 
 Generated artifacts:
@@ -58,7 +66,7 @@ Publishing example:
 ```bash
 export HF_MODEL_ID="your-username/distilbert-customer-support-intent"
 export HF_TOKEN="hf_..."
-uv run python -m training.train --push-to-hub
+UV_CACHE_DIR=.uv-cache .venv/bin/uv run python -m training.train --push-to-hub
 ```
 
 ## API Usage
@@ -66,7 +74,7 @@ uv run python -m training.train --push-to-hub
 Start the server after training or after setting `INTENT_MODEL_ID` to a compatible HuggingFace model id:
 
 ```bash
-uv run uvicorn app.main:app --reload
+UV_CACHE_DIR=.uv-cache .venv/bin/uv run uvicorn app.main:app --reload
 ```
 
 Health:
@@ -115,4 +123,3 @@ This environment mounts `.git` as read-only, so repository metadata is stored in
 git --git-dir=.repo/git --work-tree=. status
 git --git-dir=.repo/git --work-tree=. log --oneline
 ```
-
