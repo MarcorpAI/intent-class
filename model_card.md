@@ -41,7 +41,7 @@ from transformers import pipeline
 
 classifier = pipeline(
     "text-classification",
-    model="your-username/distilbert-customer-support-intent",
+    model="kaave19/distilbert-customer-support-intent",
 )
 result = classifier("I want to cancel my order")
 print(result)
